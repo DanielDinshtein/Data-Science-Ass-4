@@ -35,9 +35,9 @@ class FilesHandler:
             trainSet = pd.read_csv(self.folder_path + "\\train.csv")
             return trainSet, None
         except IOError:
-            return [], "train.csv doesn't exist in this folder"
+            return [], "The file 'train.csv' doesn't exist in this folder"
         except pd.errors.EmptyDataError:
-            return [], "train.csv is empty file"
+            return [], "The file 'train.csv' is empty"
 
 
     def extractTestFile(self):
@@ -46,9 +46,9 @@ class FilesHandler:
             testSet = pd.read_csv(self.folder_path + "\\test.csv")
             return testSet, None
         except IOError:
-            return [], "test.csv doesn't exist in this folder"
+            return [], "The file 'test.csv' doesn't exist in this folder"
         except pd.errors.EmptyDataError:
-            return [], "test.csv is empty file"
+            return [], "The file 'test.csv' is empty file"
 
 
     def extractStructureFile(self):
@@ -56,7 +56,7 @@ class FilesHandler:
         try:
             file_size = os.stat(self.folder_path + "\\Structure.txt").st_size
             if file_size == 0:
-                return [], "Structure.txt is empty file"
+                return [], "The file 'Structure.txt' is empty file"
 
             with open(self.folder_path + "\\Structure.txt") as file:
                 structure = file.readlines()
@@ -65,6 +65,6 @@ class FilesHandler:
             return structure, None
 
         except IOError:
-            return [], "Structure.txt doesn't exist in this folder"
+            return [], "The file 'Structure.txt' doesn't exist in this folder"
 
 
