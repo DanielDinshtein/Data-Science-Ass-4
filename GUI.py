@@ -18,7 +18,7 @@ class GUI:
         # Master Window
         self.master = master
         self.master.title("Naïve Bayes Classifier")
-        self.master.geometry('600x600')
+        self.master.geometry('660x500')
         self.master.config(background="bisque")
 
         # Files Attributes
@@ -54,46 +54,46 @@ class GUI:
         #   Label
         self.file_path_label = Label(self.master, text="Directory Path : ")
         self.file_path_label.config(background="bisque", font="bold")
-        self.file_path_label.grid(row=0, column=0, sticky="W")
+        self.file_path_label.grid(row=0, column=0, sticky="W", padx=5, pady=35)
 
         #   Entry Or Label ??
         #   TODO: Does We Want Do Give The User The Option To Change The Path Manually
         # self.file_path_entry = Entry(self.master)
         # self.file_path_entry.grid(row=0, column=1)
-        self.file_path_explorer_label = Label(self.master, text="Folder path", background="white", width="50")
+        self.file_path_explorer_label = Label(self.master, text="Folder path", background="white", width="50", height="2", borderwidth=1, relief="solid")
         self.file_path_explorer_label.grid(row=0, column=1)
 
         #   Button
-        self.browse_button = Button(self.master, text="Browse",  command=lambda: self.browseFileFolder())
-        self.browse_button.grid(row=0, column=2)
+        self.browse_button = Button(self.master, text="Browse", width="10", height="2", relief="raised", command=lambda: self.browseFileFolder())
+        self.browse_button.grid(row=0, column=2, padx=5)
 
 
         # Discretization Bins :
 
         #   Label
         self.bins_label = Label(self.master, text="Discretization Bins : ")
-        self.bins_label.config(background="bisque", font="bold")
+        self.bins_label.config(background="bisque", font="bold", height="2")
         self.bins_label.grid(row=1, column=0, sticky="W")
 
         #   Entry
         checkValidBins = self.master.register(self.checkBinsNumber)
         self.bins_entry = Entry(self.master, validate="key", validatecommand=(checkValidBins, '%P'))
-        self.bins_entry.grid(row=1, column=1, sticky="W" )
+        self.bins_entry.grid(row=1, column=1, sticky="W")
 
 
         # Build :
 
         #   Button
         self.build_button = Button(self.master, text="Build", command=lambda: self.startPreProcessing())
-        self.build_button.config(state=DISABLED, relief=GROOVE)
-        self.build_button.grid(row=2, column=1)
+        self.build_button.config(state=DISABLED, relief=GROOVE, width="50", height="2")
+        self.build_button.grid(row=4, column=1, pady=30)
 
         # Classify :
 
         #   Button
         self.classify_button = Button(self.master, text="Classify", command=lambda: self.startClassifier())
-        self.classify_button.config(state=DISABLED, relief=GROOVE)
-        self.classify_button.grid(row=3, column=1)
+        self.classify_button.config(state=DISABLED, relief=GROOVE, width="50", height="2")
+        self.classify_button.grid(row=6, column=1, pady=30)
 
 
 
@@ -101,14 +101,14 @@ class GUI:
 
     def browseFileFolder(self):
 
-        need_to_rebuild = False
+        need_to_rebuild = True
 
         if self.done_build :
             message = "Changing the directory path will restart the build process.\n"
             message += "Are you sure you want to change the directory path?"
             need_to_rebuild = self.messageHandler("Want Rebuild?" , message)
 
-        if need_to_rebuild :
+        if not need_to_rebuild :
             return
 
         file_folder = filedialog.askdirectory(initialdir="/", title="Select a Folder")
@@ -279,6 +279,9 @@ class GUI:
 
         self.done_build = True
         self.checkClassifyButtonState()
+
+        self.done_browse = False
+        self.checkBuildButtonState()
 
 
 
