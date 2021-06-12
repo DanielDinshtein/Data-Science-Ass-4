@@ -29,8 +29,8 @@ class GUI:
         self.structure = None
 
         # Flags For "Build" Button
-        self.is_done_browse = False
-        self.is_done_bin = False
+        self.done_browse = False
+        self.done_bin = False
 
         # Flag For "Classify" Button
         self.done_build = False
@@ -101,7 +101,16 @@ class GUI:
 
     def browseFileFolder(self):
 
+        if self.done_build :
+            message = "Changing the directory path will restart the build process.\n"
+            message += "Are you sure you want to change the directory path?"
+            self.messageHandler("Want Rebuild?" , message)
+
+        if self.done_browse :
+            return
+
         file_folder = filedialog.askdirectory(initialdir="/", title="Select a Folder")
+
         if file_folder is not None and file_folder != '':
 
             # Change Directory Path
@@ -111,11 +120,8 @@ class GUI:
             # Read And Handel The Files
             files_handler_result = self.files_handler.readFilesFromFolder(file_folder)
 
-            self.is_done_browse = True
+            self.done_browse = True
             self.checkBuildButtonState()
-
-            self.error_build_files = False
-            self.error_classify_files = False
 
             for file_name, result_about_file in files_handler_result.items():
                 if result_about_file["Error"] is not None:
@@ -141,9 +147,8 @@ class GUI:
             else :
                 self.test_set = None
 
-
         else :
-            self.is_done_browse = False
+            self.done_browse = False
             self.checkBuildButtonState()
             # self.errorHandler("Please select valid file directory.")
 
@@ -168,6 +173,11 @@ class GUI:
 
 
     def startClassifier(self):
+
+        pre_processing_result = self.pre_processor.preProcessTestSet(self.test_set)
+
+        self.naive_bayes_model.classifyTestSet(pre_processing_result)
+
         pass
 
 
@@ -176,10 +186,16 @@ class GUI:
 
         if messageType == "Build Error" :
             messagebox.showerror(title="Naïve Bayes Classifier", message=message)
-            self.rebootAfterBuildError()
+            self.rebootBuildAttributes()
         elif messageType == "Build Finished" :
             messagebox.showinfo(title="Naïve Bayes Classifier", message=message)
             self.rebootAfterBuildFinished()
+        elif messageType == "Want Rebuild?" :
+            result_from_ask_question = messagebox.askquestion(title="Naïve Bayes Classifier", message=message)
+            if result_from_ask_question == 'yes' :
+                self.rebootBuildAttributes()
+
+
 
 
 
@@ -187,13 +203,13 @@ class GUI:
         #  TODO: Maybe Bins need to be smaller then len(test)??
         if not binsText:
             self.number_of_bins = None
-            self.is_done_bin = False
+            self.done_bin = False
             self.checkBuildButtonState()
             return True
 
         try:
             self.number_of_bins = int(binsText)
-            self.is_done_bin = True
+            self.done_bin = True
             self.checkBuildButtonState()
             return True
         except ValueError:
@@ -201,12 +217,13 @@ class GUI:
 
 
     def checkBuildButtonState(self):
-        if self.is_done_browse and self.is_done_bin and self.build_button['state'] == DISABLED :
+        if self.done_browse and self.done_bin and self.build_button['state'] == DISABLED :
             self.build_button.config(state=NORMAL, relief=RAISED)
 
         elif self.build_button['state'] == NORMAL :
-            if not self.is_done_browse or not self.is_done_bin :
+            if not self.done_browse or not self.done_bin :
                 self.build_button.config(state=DISABLED, relief=GROOVE)
+
 
     def checkClassifyButtonState(self):
         if self.done_build and self.classify_button['state'] == DISABLED :
@@ -218,9 +235,9 @@ class GUI:
 
 
 
-    def rebootAfterBuildError(self):
+    def rebootBuildAttributes(self):
 
-        self.is_done_browse = False
+        self.done_browse = False
         self.checkBuildButtonState()
         self.file_path_explorer_label.configure(text="Folder path")
 
@@ -238,9 +255,6 @@ class GUI:
         self.done_build = True
         self.checkClassifyButtonState()
 
-        #  TODO : It's Ok To Disable Build ??
-        self.is_done_browse = False
-        self.checkBuildButtonState()
 
 
 

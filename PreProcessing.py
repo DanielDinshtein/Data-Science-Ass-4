@@ -9,6 +9,7 @@ class PreProcessing:
     def __init__(self):
         self.structure_file = None
         self.train_set = None
+        self.test_set = None
         self.bins_number = 0
 
 
@@ -25,13 +26,32 @@ class PreProcessing:
 
             # No Need To Do Discretization On 'class'
             if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
+                #  TODO: What if 'class' is numeric??
                 break
 
             # Numeric Attribute
             if "NUMERIC" in self.structure_file[idx] :
-                self.train_set[feature] = self.equalWidthDiscretization(feature)
+                self.train_set[feature] = self.equalWidthDiscretization(feature, "train")
 
         return self.train_set
+
+
+    def preProcessTestSet(self, testSet):
+        self.test_set = testSet
+
+        copy_test_set = self.test_set
+
+        for idx, feature in enumerate(copy_test_set.columns):
+
+            # No Need To Do Discretization On 'class'
+            if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
+                break
+
+            # Numeric Attribute
+            if "NUMERIC" in self.structure_file[idx] :
+                self.test_set[feature] = self.equalWidthDiscretization(feature, "test")
+
+        return self.test_set
 
 
 
@@ -59,13 +79,18 @@ class PreProcessing:
 
 
 
-    def equalWidthDiscretization(self, feature):
+    def equalWidthDiscretization(self, feature, trainOrTest):
 
         bins = []
         group_names = []
 
-        min_value = self.train_set[feature].min()
-        max_value = self.train_set[feature].max()
+        if trainOrTest == "train" :
+            min_value = self.train_set[feature].min()
+            max_value = self.train_set[feature].max()
+        else:
+            # == test
+            min_value = self.test_set[feature].min()
+            max_value = self.test_set[feature].max()
 
         interval_width = ( max_value - min_value ) / self.bins_number
 
@@ -75,7 +100,12 @@ class PreProcessing:
 
         group_names.append( str( self.bins_number - 1 ) )
 
-        feature_binned = self.binning( self.train_set[feature], bins, group_names )
+        if trainOrTest == "train" :
+            feature_binned = self.binning( self.train_set[feature], bins, group_names )
+        else:
+            # == test
+            feature_binned = self.binning( self.test_set[feature], bins, group_names )
+
 
         return feature_binned
 
