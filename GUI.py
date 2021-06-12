@@ -6,7 +6,7 @@ from tkinter import Tk, Label, Button, Entry, IntVar, END, W, E, filedialog, mes
 
 import FilesHandler
 import PreProcessing
-import NaiveBayesClassifier
+import NaiveBayesModel
 
 
 class GUI:
@@ -32,6 +32,9 @@ class GUI:
         self.is_done_browse = False
         self.is_done_bin = False
 
+        # Flag For "Classify" Button
+        self.done_build = False
+
         # Flags And Error Message About Files
         self.error_build_files = False
         self.error_message_build_files = ""
@@ -40,8 +43,8 @@ class GUI:
 
         # Classes Objects
         self.files_handler = FilesHandler.FilesHandler()
-        self.preProcessor = PreProcessing.PreProcessing()
-        self.naiveBayesClassifier = NaiveBayesClassifier.NaiveBayesClassifier()
+        self.pre_processor = PreProcessing.PreProcessing()
+        self.naive_bayes_model = NaiveBayesModel.NaiveBayesModel()
 
 
 
@@ -149,10 +152,19 @@ class GUI:
     def startPreProcessing(self):
 
         if self.error_build_files:
-            self.errorHandler("Build Error", self.error_message_build_files)
+            self.messageHandler("Build Error", self.error_message_build_files)
             return
 
-        pre_processing_result = self.preProcessor.preProcessBuildFiles(self.train_set, self.structure, self.number_of_bins)
+        pre_processing_result = self.pre_processor.preProcessBuildFiles(self.train_set, self.structure, self.number_of_bins)
+
+        #  TODO: Clear train_set maybe?
+        # What To Do After Building ?
+
+        self.naive_bayes_model.buildModel(pre_processing_result)
+
+        self.messageHandler("Build Finished", "Building classifier using train-set is done!")
+
+
 
 
     def startClassifier(self):
@@ -160,11 +172,14 @@ class GUI:
 
 
 
-    def errorHandler(self, errorType, errorMessage):
+    def messageHandler(self, messageType, message):
 
-        if errorType == "Build Error" :
-            messagebox.showerror("Naïve Bayes Classifier", errorMessage)
+        if messageType == "Build Error" :
+            messagebox.showerror(title="Naïve Bayes Classifier", message=message)
             self.rebootAfterBuildError()
+        elif messageType == "Build Finished" :
+            messagebox.showinfo(title="Naïve Bayes Classifier", message=message)
+            self.rebootAfterBuildFinished()
 
 
 
@@ -193,6 +208,15 @@ class GUI:
             if not self.is_done_browse or not self.is_done_bin :
                 self.build_button.config(state=DISABLED, relief=GROOVE)
 
+    def checkClassifyButtonState(self):
+        if self.done_build and self.classify_button['state'] == DISABLED :
+            self.classify_button.config(state=NORMAL, relief=RAISED)
+
+        elif self.classify_button['state'] == NORMAL and not self.done_build :
+            self.classify_button.config(state=DISABLED, relief=GROOVE)
+
+
+
 
     def rebootAfterBuildError(self):
 
@@ -208,6 +232,15 @@ class GUI:
         self.error_message_build_files = ""
         self.error_classify_files = False
         self.error_message_classify_files = ""
+
+    def rebootAfterBuildFinished(self):
+
+        self.done_build = True
+        self.checkClassifyButtonState()
+
+        #  TODO : It's Ok To Disable Build ??
+        self.is_done_browse = False
+        self.checkBuildButtonState()
 
 
 

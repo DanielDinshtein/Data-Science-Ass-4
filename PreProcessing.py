@@ -28,8 +28,10 @@ class PreProcessing:
                 break
 
             # Numeric Attribute
-            if "NUMERIC" in self.structure_file[idx] or self.train_set[feature].dtypes == float or self.train_set[feature].dtypes == int :
+            if "NUMERIC" in self.structure_file[idx] :
                 self.train_set[feature] = self.equalWidthDiscretization(feature)
+
+        return self.train_set
 
 
 
@@ -47,11 +49,12 @@ class PreProcessing:
             # Check If There Null Values
             if featuresWithNulls[feature] != 0:
                 # Categorical Attribute
-                if "NUMERIC" not in self.structure_file[idx] or self.train_set[feature].dtypes == object :
+                if "NUMERIC" not in self.structure_file[idx] :
                     self.train_set[feature].fillna(stats.mode(self.train_set[feature]), inplace=True)
 
                 # Numeric Attribute
-                elif "NUMERIC" in self.structure_file[idx] or self.train_set[feature].dtypes == float or self.train_set[feature].dtypes == int :
+                elif "NUMERIC" in self.structure_file[idx] :
+                    #  TODO: check if need to mean with group by on class
                     self.train_set[feature].fillna(self.train_set[feature].mean(), inplace=True)
 
 
