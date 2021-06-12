@@ -41,6 +41,7 @@ class NaiveBayesModel:
             self.attributes_information[feature] = self.train_set.groupby([feature]).size()
 
 
+
     def calculateLikelihood(self):
 
         for feature in self.features:

@@ -26,7 +26,6 @@ class PreProcessing:
 
             # No Need To Do Discretization On 'class'
             if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
-                #  TODO: What if 'class' is numeric??
                 break
 
             # Numeric Attribute
@@ -74,8 +73,7 @@ class PreProcessing:
 
                 # Numeric Attribute
                 elif "NUMERIC" in self.structure_file[idx] :
-                    #  TODO: check if need to mean with group by on class
-                    self.train_set[feature].fillna(self.train_set[feature].mean(), inplace=True)
+                    self.train_set[feature] = self.train_set[feature].fillna(self.train_set.groupby( "class" )[feature].transform("mean"))
 
 
 
@@ -108,7 +106,6 @@ class PreProcessing:
 
 
         return feature_binned
-
 
 
 

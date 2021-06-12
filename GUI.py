@@ -101,17 +101,19 @@ class GUI:
 
     def browseFileFolder(self):
 
+        need_to_rebuild = False
+
         if self.done_build :
             message = "Changing the directory path will restart the build process.\n"
             message += "Are you sure you want to change the directory path?"
-            self.messageHandler("Want Rebuild?" , message)
+            need_to_rebuild = self.messageHandler("Want Rebuild?" , message)
 
-        if self.done_browse :
+        if need_to_rebuild :
             return
 
         file_folder = filedialog.askdirectory(initialdir="/", title="Select a Folder")
 
-        if file_folder is not None and file_folder != '':
+        if file_folder is not None and file_folder != '' :
 
             # Change Directory Path
             self.folder_directory_path = file_folder
@@ -147,10 +149,6 @@ class GUI:
             else :
                 self.test_set = None
 
-        else :
-            self.done_browse = False
-            self.checkBuildButtonState()
-            # self.errorHandler("Please select valid file directory.")
 
 
 
@@ -160,13 +158,16 @@ class GUI:
             self.messageHandler("Build Error", self.error_message_build_files)
             return
 
+        # Pre Process Train Files
         pre_processing_result = self.pre_processor.preProcessBuildFiles(self.train_set, self.structure, self.number_of_bins)
 
         #  TODO: Clear train_set maybe?
         # What To Do After Building ?
 
+        # Build The Model
         self.naive_bayes_model.buildModel(pre_processing_result)
 
+        # Finish Building The Model
         self.messageHandler("Build Finished", "Building classifier using train-set is done!")
 
 
@@ -174,11 +175,17 @@ class GUI:
 
     def startClassifier(self):
 
+        # Pre Process Test File
         pre_processing_result = self.pre_processor.preProcessTestSet(self.test_set)
 
+        # Make Classification On Test File
         self.naive_bayes_model.classifyTestSet(pre_processing_result)
 
-        pass
+        # Finish Classification - Exit The Program
+        message = "All records are classified successfully ! \n\n"
+        message += "The classification results are saved in the files folder in - 'output.txt'. "
+        self.messageHandler("Finished Classify", message)
+
 
 
 
@@ -187,20 +194,28 @@ class GUI:
         if messageType == "Build Error" :
             messagebox.showerror(title="Naïve Bayes Classifier", message=message)
             self.rebootBuildAttributes()
+
         elif messageType == "Build Finished" :
             messagebox.showinfo(title="Naïve Bayes Classifier", message=message)
             self.rebootAfterBuildFinished()
+
         elif messageType == "Want Rebuild?" :
             result_from_ask_question = messagebox.askquestion(title="Naïve Bayes Classifier", message=message)
             if result_from_ask_question == 'yes' :
                 self.rebootBuildAttributes()
+                return True
 
+            return False
+
+        elif messageType == "Finished Classify" :
+            messagebox.showinfo(title="Naïve Bayes Classifier", message=message)
+            self.master.destroy()
 
 
 
 
     def checkBinsNumber(self, binsText):
-        #  TODO: Maybe Bins need to be smaller then len(test)??
+
         if not binsText:
             self.number_of_bins = None
             self.done_bin = False
@@ -234,21 +249,31 @@ class GUI:
 
 
 
-
     def rebootBuildAttributes(self):
 
+        # Browse Button
         self.done_browse = False
         self.checkBuildButtonState()
-        self.file_path_explorer_label.configure(text="Folder path")
 
+        # Directory Clear
+        self.file_path_explorer_label.configure(text="Folder path")
+        self.folder_directory_path = ""
+
+        # Files Clear
         self.test_set = None
         self.train_set = None
         self.structure = None
 
+        # Files Attributes clear
         self.error_build_files = False
         self.error_message_build_files = ""
         self.error_classify_files = False
         self.error_message_classify_files = ""
+
+        # Build Button
+        self.done_build = False
+        self.checkClassifyButtonState()
+
 
     def rebootAfterBuildFinished(self):
 
