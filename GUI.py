@@ -4,10 +4,9 @@
 
 from tkinter import Tk, Label, Button, Entry, IntVar, END, W, E, filedialog, messagebox, DISABLED, NORMAL, GROOVE, RAISED
 
-from numpy.ma import column_stack
-
 import FilesHandler
 import PreProcessing
+import NaiveBayesClassifier
 
 
 class GUI:
@@ -22,19 +21,27 @@ class GUI:
         self.master.geometry('600x600')
         self.master.config(background="bisque")
 
+        # Files Attributes
+        self.folder_directory_path = ""
         self.number_of_bins = None
         self.train_set = None
         self.test_set = None
         self.structure = None
 
+        # Flags For "Build" Button
         self.is_done_browse = False
         self.is_done_bin = False
 
-        self.error_from_files = False
-        self.error_message_from_files = ""
+        # Flags And Error Message About Files
+        self.error_build_files = False
+        self.error_message_build_files = ""
+        self.error_classify_files = False
+        self.error_message_classify_files = ""
 
-        self.files_reader = FilesHandler.FilesHandler()
+        # Classes Objects
+        self.files_handler = FilesHandler.FilesHandler()
         self.preProcessor = PreProcessing.PreProcessing()
+        self.naiveBayesClassifier = NaiveBayesClassifier.NaiveBayesClassifier()
 
 
 
@@ -78,6 +85,13 @@ class GUI:
         self.build_button.config(state=DISABLED, relief=GROOVE)
         self.build_button.grid(row=2, column=1)
 
+        # Classify :
+
+        #   Button
+        self.classify_button = Button(self.master, text="Classify", command=lambda: self.startClassifier())
+        self.classify_button.config(state=DISABLED, relief=GROOVE)
+        self.classify_button.grid(row=3, column=1)
+
 
 
 
@@ -87,39 +101,75 @@ class GUI:
         file_folder = filedialog.askdirectory(initialdir="/", title="Select a Folder")
         if file_folder is not None and file_folder != '':
 
+            # Change Directory Path
+            self.folder_directory_path = file_folder
             self.file_path_explorer_label.configure(text=file_folder)
 
-            files_handler_result = self.files_reader.readFilesFromFolder(file_folder)
+            # Read And Handel The Files
+            files_handler_result = self.files_handler.readFilesFromFolder(file_folder)
 
             self.is_done_browse = True
             self.checkBuildButtonState()
-            self.error_from_files = False
+
+            self.error_build_files = False
+            self.error_classify_files = False
 
             for file_name, result_about_file in files_handler_result.items():
                 if result_about_file["Error"] is not None:
-                    self.error_from_files = True
-                    self.error_message_from_files += result_about_file["Error"]
-                    self.error_message_from_files += ".\n"
+                    if file_name != "testSet" :
+                        self.error_build_files = True
+                        self.error_message_build_files += result_about_file["Error"]
+                        self.error_message_build_files += ".\n"
+                    else :
+                        self.error_classify_files = True
+                        self.error_message_classify_files += result_about_file["Error"]
 
-            if not self.error_from_files :
+            # Save The Train Files If No Errors
+            if not self.error_build_files :
                 self.train_set = files_handler_result["trainSet"]["File"]
-                self.test_set = files_handler_result["testSet"]["File"]
                 self.structure = files_handler_result["structure"]["File"]
+            else :
+                self.train_set = None
+                self.structure = None
+
+            # Save The Test File If No Errors
+            if not self.error_classify_files :
+                self.test_set = files_handler_result["testSet"]["File"]
+            else :
+                self.test_set = None
+
 
         else :
             self.is_done_browse = False
+            self.checkBuildButtonState()
             # self.errorHandler("Please select valid file directory.")
 
 
 
-    def errorHandler(self, errorMessage):
+    def startPreProcessing(self):
 
-        messagebox.showerror("Naïve Bayes Classifier", errorMessage)
+        if self.error_build_files:
+            self.errorHandler("Build Error", self.error_message_build_files)
+            return
+
+        pre_processing_result = self.preProcessor.preProcessBuildFiles(self.train_set, self.structure, self.number_of_bins)
+
+
+    def startClassifier(self):
+        pass
+
+
+
+    def errorHandler(self, errorType, errorMessage):
+
+        if errorType == "Build Error" :
+            messagebox.showerror("Naïve Bayes Classifier", errorMessage)
+            self.rebootAfterBuildError()
 
 
 
     def checkBinsNumber(self, binsText):
-        #  TODO: Maybe Bins need to be smaller then values??
+        #  TODO: Maybe Bins need to be smaller then len(test)??
         if not binsText:
             self.number_of_bins = None
             self.is_done_bin = False
@@ -135,18 +185,6 @@ class GUI:
             return False
 
 
-    def startPreProcessing(self):
-
-        if self.error_from_files:
-            self.is_done_browse = False
-            self.checkBuildButtonState()
-            self.file_path_explorer_label.configure(text="Folder path")
-            self.errorHandler(self.error_message_from_files)
-            self.error_message_from_files = ""
-            return
-
-
-
     def checkBuildButtonState(self):
         if self.is_done_browse and self.is_done_bin and self.build_button['state'] == DISABLED :
             self.build_button.config(state=NORMAL, relief=RAISED)
@@ -154,6 +192,24 @@ class GUI:
         elif self.build_button['state'] == NORMAL :
             if not self.is_done_browse or not self.is_done_bin :
                 self.build_button.config(state=DISABLED, relief=GROOVE)
+
+
+    def rebootAfterBuildError(self):
+
+        self.is_done_browse = False
+        self.checkBuildButtonState()
+        self.file_path_explorer_label.configure(text="Folder path")
+
+        self.test_set = None
+        self.train_set = None
+        self.structure = None
+
+        self.error_build_files = False
+        self.error_message_build_files = ""
+        self.error_classify_files = False
+        self.error_message_classify_files = ""
+
+
 
 
 
