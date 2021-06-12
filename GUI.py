@@ -104,8 +104,8 @@ class GUI:
         need_to_rebuild = True
 
         if self.done_build :
-            message = "Changing the directory path will restart the build process.\n"
-            message += "Are you sure you want to change the directory path?"
+            message = "Changing the directory path will restart the build process.\n\n"
+            message += "Are you sure you want to change the directory path ?"
             need_to_rebuild = self.messageHandler("Want Rebuild?" , message)
 
         if not need_to_rebuild :
@@ -130,7 +130,7 @@ class GUI:
                     if file_name != "testSet" :
                         self.error_build_files = True
                         self.error_message_build_files += result_about_file["Error"]
-                        self.error_message_build_files += ".\n"
+                        self.error_message_build_files += ".\n\n"
                     else :
                         self.error_classify_files = True
                         self.error_message_classify_files += result_about_file["Error"]
@@ -154,7 +154,7 @@ class GUI:
 
     def startPreProcessing(self):
 
-        if self.error_build_files:
+        if self.error_build_files:  # TODO: Add Error If Test csv Not Exist
             self.messageHandler("Build Error", self.error_message_build_files)
             return
 
@@ -179,7 +179,7 @@ class GUI:
         pre_processing_result = self.pre_processor.preProcessTestSet(self.test_set)
 
         # Make Classification On Test File
-        self.naive_bayes_model.classifyTestSet(pre_processing_result)
+        self.naive_bayes_model.classifyTestSet(pre_processing_result, self.folder_directory_path)
 
         # Finish Classification - Exit The Program
         message = "All records are classified successfully ! \n\n"

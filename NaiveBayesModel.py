@@ -10,6 +10,7 @@ class NaiveBayesModel:
 
         self.test_set = None
         self.prediction_result = {}
+        self.folder_path = ""
 
         #  TODO: Remove After Every this working
         self.prediction_calculation = {}
@@ -55,7 +56,9 @@ class NaiveBayesModel:
                 # y = self.likelihood[feature]['N']['Female']
 
 
-    def classifyTestSet(self, testSet):
+    def classifyTestSet(self, testSet, folderPath):
+
+        self.folder_path = folderPath
 
         labels = testSet.iloc[:, len(testSet.columns) - 1].values
 
@@ -83,8 +86,28 @@ class NaiveBayesModel:
 
                 self.prediction_result[str(index + 1)][ class_value ] *= self.prior_probability[class_value]
 
-            x = 0
+        self.writePredictionResultToFile()
 
-        y = 0
 
+
+    def writePredictionResultToFile(self):
+
+        with open(self.folder_path + "\\output.txt", 'w') as file:
+
+            for record_number, prediction_options in self.prediction_result.items() :
+
+                max_val = 0
+                prediction_class = ''
+                for pred_option, option_value in prediction_options.items() :
+                    if option_value > max_val :
+                        max_val = option_value
+                        prediction_class = pred_option
+
+                output_line = record_number + " " + prediction_class
+
+                if len(self.prediction_result) != int(record_number) :
+                    output_line += "\n"
+
+                file.write(output_line)
+        file.close()
 
