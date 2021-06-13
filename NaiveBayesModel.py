@@ -24,6 +24,12 @@ class NaiveBayesModel:
 
 
     def buildModel(self, trainSet):
+        """
+        Called from the GUI after the user pressed the ' Build ' button.
+        This method is in charge to call the methods of the model building ,
+        and arrange the information before needed in time of classification.
+        :param trainSet: The train data structure from building the model
+        """
         self.train_set = trainSet
         self.features = trainSet.columns
 
@@ -32,8 +38,12 @@ class NaiveBayesModel:
         self.calculateLikelihood()
 
 
-    def calculatePriorProbability(self):
 
+    def calculatePriorProbability(self):
+        """
+        This method is in charge of calculating the class values prior probability.
+        It also saves the number of each value in each feature in the train set
+        """
         for feature in self.features:
 
             if feature == "class" :
@@ -44,7 +54,10 @@ class NaiveBayesModel:
 
 
     def calculateLikelihood(self):
-
+        """
+        This method is in charge of calculating the likelihood of each feature
+        with the m-estimate algorithm ( m = 2 )
+        """
         for feature in self.features:
 
             if feature != "class" :
@@ -53,11 +66,18 @@ class NaiveBayesModel:
                 n = self.attributes_information["class"]
 
                 self.likelihood[feature] = ( Nc + mp ) / ( n + 2 )
-                # y = self.likelihood[feature]['N']['Female']
+
 
 
     def classifyTestSet(self, testSet, folderPath):
-
+        """
+        Called  from the GUI after the user pressed the ' Classify ' button.
+        This method is in charge of the classification of all the test set,
+        with the Naive Bayes - m-estimate Model
+        :param testSet: The test set records needed to get classification
+        :param folderPath: The Folder path where needed to write
+               the ' output.txt ' file with the classification result
+        """
         self.folder_path = folderPath
 
         labels = testSet.iloc[:, len(testSet.columns) - 1].values
@@ -91,7 +111,9 @@ class NaiveBayesModel:
 
 
     def writePredictionResultToFile(self):
-
+        """
+        This method is in charge to right the prediction results to ' output.txt ' file
+        """
         with open(self.folder_path + "\\output.txt", 'w') as file:
 
             for record_number, prediction_options in self.prediction_result.items() :
@@ -110,4 +132,6 @@ class NaiveBayesModel:
 
                 file.write(output_line)
         file.close()
+
+        #  TODO: Maybe try and except for file writing??
 

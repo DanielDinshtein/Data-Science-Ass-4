@@ -37,9 +37,9 @@ class GUI:
 
         # Flags And Error Message About Files
         self.error_build_files = False
-        self.error_message_build_files = ""
+        self.error_message_files = ""
         self.error_classify_files = False
-        self.error_message_classify_files = ""
+
 
         # Classes Objects
         self.files_handler = FilesHandler.FilesHandler()
@@ -56,10 +56,7 @@ class GUI:
         self.file_path_label.config(background="bisque", font="bold")
         self.file_path_label.grid(row=0, column=0, sticky="W", padx=5, pady=35)
 
-        #   Entry Or Label ??
-        #   TODO: Does We Want Do Give The User The Option To Change The Path Manually
-        # self.file_path_entry = Entry(self.master)
-        # self.file_path_entry.grid(row=0, column=1)
+        #   Label
         self.file_path_explorer_label = Label(self.master, text="Folder path", background="white", width="50", height="2", borderwidth=1, relief="solid")
         self.file_path_explorer_label.grid(row=0, column=1)
 
@@ -100,7 +97,12 @@ class GUI:
 
 
     def browseFileFolder(self):
-
+        """
+        After the user pressing the ' Browse ' button, this method called.
+        This method is in charge on the browse window for getting the file directory path.
+        And after it got the user's input path, it's sends the path to the ' FileHandler '
+        for read the needed files to the model.
+        """
         need_to_rebuild = True
 
         if self.done_build :
@@ -125,44 +127,46 @@ class GUI:
             self.done_browse = True
             self.checkBuildButtonState()
 
+            # Checks the input from the ' FilesHandler ' and update the attributes
             for file_name, result_about_file in files_handler_result.items():
                 if result_about_file["Error"] is not None:
                     if file_name != "testSet" :
                         self.error_build_files = True
-                        self.error_message_build_files += result_about_file["Error"]
-                        self.error_message_build_files += ".\n\n"
+                        self.error_message_files += result_about_file["Error"]
+                        self.error_message_files += ".\n\n"
                     else :
                         self.error_classify_files = True
-                        self.error_message_classify_files += result_about_file["Error"]
+                        self.error_message_files += result_about_file["Error"]
+                        self.error_message_files += ".\n\n"
 
-            # Save The Train Files If No Errors
-            if not self.error_build_files :
+
+            # Save The Train And Test Files If No Errors
+            if not self.error_build_files and not self.error_classify_files :
                 self.train_set = files_handler_result["trainSet"]["File"]
                 self.structure = files_handler_result["structure"]["File"]
+                self.test_set = files_handler_result["testSet"]["File"]
             else :
                 self.train_set = None
                 self.structure = None
-
-            # Save The Test File If No Errors
-            if not self.error_classify_files :
-                self.test_set = files_handler_result["testSet"]["File"]
-            else :
                 self.test_set = None
 
 
 
-
     def startPreProcessing(self):
-
-        if self.error_build_files:  # TODO: Add Error If Test csv Not Exist
-            self.messageHandler("Build Error", self.error_message_build_files)
+        """
+        After the user pressing the ' Build ' button, this method called,
+        and only if all of the user's input needed for the build are entered.
+        This is in charge of all the " Build " stage -
+            sends the files to preprocess
+            send the data structure after preprocess to the model build
+        :return:
+        """
+        if self.error_build_files or self.error_classify_files :
+            self.messageHandler("Build Error", self.error_message_files)
             return
 
         # Pre Process Train Files
         pre_processing_result = self.pre_processor.preProcessBuildFiles(self.train_set, self.structure, self.number_of_bins)
-
-        #  TODO: Clear train_set maybe?
-        # What To Do After Building ?
 
         # Build The Model
         self.naive_bayes_model.buildModel(pre_processing_result)
@@ -172,9 +176,13 @@ class GUI:
 
 
 
-
     def startClassifier(self):
-
+        """
+        After the user pressing the ' Classify ' button, this method called.
+        This method is in charge of all the " Classification " stage -
+            sends the test file to preprocess
+            send the data structure after preprocess to the prediction model
+        """
         # Pre Process Test File
         pre_processing_result = self.pre_processor.preProcessTestSet(self.test_set)
 
@@ -188,9 +196,14 @@ class GUI:
 
 
 
-
     def messageHandler(self, messageType, message):
-
+        """
+        This method called from the other methods in the class.
+        It is in charge of handling the messages that need to be shown to the user.
+        :param messageType: What case of message need to be shown
+        :param message: The message that will be shown to the user
+        :return: Only in case of ' ask question ' - return if user want to rebuild or not
+        """
         if messageType == "Build Error" :
             messagebox.showerror(title="Naïve Bayes Classifier", message=message)
             self.rebootBuildAttributes()
@@ -213,9 +226,13 @@ class GUI:
 
 
 
-
     def checkBinsNumber(self, binsText):
-
+        """
+        This method is a validation function for ' Bins ' Entry object,
+        It is in charge of handling the input in the Entry in the ' Bins ' object.
+        :param binsText: The text from the user's input in the ' Bins ' entry
+        :return: True - if its int ; False - else
+        """
         if not binsText:
             self.number_of_bins = None
             self.done_bin = False
@@ -231,7 +248,15 @@ class GUI:
             return False
 
 
+
     def checkBuildButtonState(self):
+        """
+        After every change in the ' Build buttons Flags' , this method called.
+        This method is in charge on the change of the ' Build ' button state :
+        The Button States :
+        - NORMAL - When all needed user's inputs are given
+        - DISABLED - When the user didn't finished to enter all the inputs needed
+        """
         if self.done_browse and self.done_bin and self.build_button['state'] == DISABLED :
             self.build_button.config(state=NORMAL, relief=RAISED)
 
@@ -240,7 +265,15 @@ class GUI:
                 self.build_button.config(state=DISABLED, relief=GROOVE)
 
 
+
     def checkClassifyButtonState(self):
+        """
+        After every change in the ' Classify buttons Flags' , this method called.
+        This method is in charge on the change of the ' Classify ' button state :
+        The Button States :
+        - NORMAL - The " Build " stage finished successfully
+        - DISABLED - All time before " Build " executed successfully
+        """
         if self.done_build and self.classify_button['state'] == DISABLED :
             self.classify_button.config(state=NORMAL, relief=RAISED)
 
@@ -250,7 +283,10 @@ class GUI:
 
 
     def rebootBuildAttributes(self):
-
+        """
+        This method is in charge to reboot all the attributes that
+        indicate us about the ' Build ' stage.
+        """
         # Browse Button
         self.done_browse = False
         self.checkBuildButtonState()
@@ -266,27 +302,25 @@ class GUI:
 
         # Files Attributes clear
         self.error_build_files = False
-        self.error_message_build_files = ""
+        self.error_message_files = ""
         self.error_classify_files = False
-        self.error_message_classify_files = ""
 
         # Build Button
         self.done_build = False
         self.checkClassifyButtonState()
 
 
-    def rebootAfterBuildFinished(self):
 
+    def rebootAfterBuildFinished(self):
+        """
+        This method is in charge to reboot all the attributes that
+        indicate us about the ' After Build ' stage.
+        """
         self.done_build = True
         self.checkClassifyButtonState()
 
         self.done_browse = False
         self.checkBuildButtonState()
-
-
-
-
-
 
 
 

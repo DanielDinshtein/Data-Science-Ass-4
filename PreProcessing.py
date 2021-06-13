@@ -13,7 +13,17 @@ class PreProcessing:
         self.bins_number = 0
 
 
+
     def preProcessBuildFiles(self, trainSet, structureFile, binsNumber):
+        """
+        Called from the GUI after the user pressed the ' Build ' button.
+        This method is in charge to call the methods of the data structure preparations,
+        and arrange the information before sending it back to the GUI.
+        :param trainSet: The train set file for building the model
+        :param structureFile: The structure file with the information about the data attributes
+        :param binsNumber: The number of bins for the Discretization
+        :return: The train data structure after preprocessing
+        """
         self.structure_file = structureFile
         self.train_set = trainSet
         self.bins_number = binsNumber
@@ -35,7 +45,15 @@ class PreProcessing:
         return self.train_set
 
 
+
     def preProcessTestSet(self, testSet):
+        """
+        Called from the GUI after the user pressed the ' Classify ' button.
+        This method is in charge to call the methods of the data structure preparations,
+        and arrange the information before sending it back to the GUI.
+        :param testSet: The test set file for building the model
+        :return: he test data structure after preprocessing
+        """
         self.test_set = testSet
 
         copy_test_set = self.test_set
@@ -55,7 +73,11 @@ class PreProcessing:
 
 
     def fillMissingValues(self):
-
+        """
+        This method is in charge of filling the missing values of the data attributes
+        - Numeric - With the mean of all other records of this feature with the same same class
+        - Categorical - With the most common value of all other values on this feature
+        """
         # Get All Features With Nulls
         featuresWithNulls = self.train_set.apply(lambda x: sum(x.isnull()), axis=0)
 
@@ -65,6 +87,7 @@ class PreProcessing:
             if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
                 break
 
+            #  TODO: Maybe add try and except for the fillna \ Discretization?
             # Check If There Null Values
             if featuresWithNulls[feature] != 0:
                 # Categorical Attribute
@@ -78,7 +101,12 @@ class PreProcessing:
 
 
     def equalWidthDiscretization(self, feature, trainOrTest):
-
+        """
+        This method is in charge of making discretization on the numeric attributes
+        :param feature: The feature name need to get discretization
+        :param trainOrTest: From which data set - train ot test
+        :return: The feature values after the discretization
+        """
         bins = []
         group_names = []
 
