@@ -14,11 +14,12 @@ class PreProcessing:
 
 
 
-    def preProcessBuildFiles(self, trainSet, structureFile, binsNumber):
+    def preProcessFiles(self, trainSet, structureFile, testSet, binsNumber):
         """
         Called from the GUI after the user pressed the ' Build ' button.
         This method is in charge to call the methods of the data structure preparations,
         and arrange the information before sending it back to the GUI.
+        :param testSet: The test set file for classify the model
         :param trainSet: The train set file for building the model
         :param structureFile: The structure file with the information about the data attributes
         :param binsNumber: The number of bins for the Discretization
@@ -26,50 +27,66 @@ class PreProcessing:
         """
         self.structure_file = structureFile
         self.train_set = trainSet
+        self.test_set = testSet
         self.bins_number = binsNumber
 
-        self.fillMissingValues()
 
-        copy_train_set = self.train_set
+        invalidFiles, message = self.checkIfAllFeaturesExists()
 
-        for idx, feature in enumerate(copy_train_set.columns):
-
-            # No Need To Do Discretization On 'class'
-            if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
-                break
-
-            # Numeric Attribute
-            if "NUMERIC" in self.structure_file[idx] :
-                self.train_set[feature] = self.equalWidthDiscretization(feature, "train")
-
-        return self.train_set
+        if invalidFiles :
+            return invalidFiles, message, None, None
 
 
+        invalidFiles, message = self.fillMissingValues()
 
-    def preProcessTestSet(self, testSet):
-        """
-        Called from the GUI after the user pressed the ' Classify ' button.
-        This method is in charge to call the methods of the data structure preparations,
-        and arrange the information before sending it back to the GUI.
-        :param testSet: The test set file for building the model
-        :return: he test data structure after preprocessing
-        """
-        self.test_set = testSet
+        if invalidFiles:
+            return invalidFiles, message, None, None
 
-        copy_test_set = self.test_set
+        try :
+            for idx, feature_structure in enumerate(self.structure_file):
 
-        for idx, feature in enumerate(copy_test_set.columns):
+                feature = feature_structure.split(' ')[1]
 
-            # No Need To Do Discretization On 'class'
-            if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
-                break
+                # No Need To Do Discretization On 'class'
+                if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
+                    break
 
-            # Numeric Attribute
-            if "NUMERIC" in self.structure_file[idx] :
-                self.test_set[feature] = self.equalWidthDiscretization(feature, "test")
+                # Numeric Attribute
+                if "NUMERIC" in self.structure_file[idx] :
+                    self.train_set[feature] = self.equalWidthDiscretization(feature, "train")
+                    self.test_set[feature] = self.equalWidthDiscretization(feature, "test")
+        except :
+            invalidFiles = True
+            message += "Error in the Discretization features.\n"
 
-        return self.test_set
 
+        if invalidFiles :
+            return invalidFiles, message, None, None
+
+        return invalidFiles, message, self.train_set, self.test_set
+
+
+
+    def checkIfAllFeaturesExists(self):
+
+        invalidFiles = False
+        message = ""
+
+        try :
+            for feature_structure in self.structure_file:
+                feature = feature_structure.split(' ')[1]
+                if feature not in self.train_set.columns:
+                    message = message + "The feature : " + feature + " not found in the train set.\n"
+                    invalidFiles = True
+                if feature not in self.test_set.columns:
+                    message = message + "The feature : " + feature + " not found in the test set.\n"
+                    invalidFiles = True
+
+        except :
+            invalidFiles = True
+            message += "Error in the features structures.\n"
+
+        return invalidFiles, message
 
 
     def fillMissingValues(self):
@@ -78,25 +95,48 @@ class PreProcessing:
         - Numeric - With the mean of all other records of this feature with the same same class
         - Categorical - With the most common value of all other values on this feature
         """
-        # Get All Features With Nulls
-        featuresWithNulls = self.train_set.apply(lambda x: sum(x.isnull()), axis=0)
+        invalidFiles = False
+        message = ""
 
-        for idx, feature in enumerate(featuresWithNulls.index):
+        try :
+            connectedDataFrames = pd.concat([ self.train_set, self.test_set ])
 
-            # No Need To Fill 'class' Attribute
-            if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
-                break
+            # Get All Features With Nulls
+            trainSet_featuresWithNulls = self.train_set.apply(lambda x: sum(x.isnull()), axis=0)
+            testSet_featuresWithNulls = self.test_set.apply(lambda x: sum(x.isnull()), axis=0)
 
-            #  TODO: Maybe add try and except for the fillna \ Discretization?
-            # Check If There Null Values
-            if featuresWithNulls[feature] != 0:
-                # Categorical Attribute
-                if "NUMERIC" not in self.structure_file[idx] :
-                    self.train_set[feature].fillna(stats.mode(self.train_set[feature]), inplace=True)
+            for idx, feature_structure in enumerate(self.structure_file):
 
-                # Numeric Attribute
-                elif "NUMERIC" in self.structure_file[idx] :
-                    self.train_set[feature] = self.train_set[feature].fillna(self.train_set.groupby( "class" )[feature].transform("mean"))
+                feature = feature_structure.split(' ')[1]
+
+                # No Need To Fill 'class' Attribute
+                if "class" in self.structure_file[idx] or len(self.structure_file) == idx + 1 :
+                    break
+
+                # Check If There Null Values - train
+                if trainSet_featuresWithNulls[feature] != 0:
+                    # Categorical Attribute
+                    if "NUMERIC" not in self.structure_file[idx] :
+                        self.train_set[feature].fillna(stats.mode(connectedDataFrames[feature]), inplace=True)
+
+                    # Numeric Attribute
+                    elif "NUMERIC" in self.structure_file[idx] :
+                        self.train_set[feature] = self.train_set[feature].fillna(connectedDataFrames.groupby( "class" )[feature].transform("mean")[  : len(self.train_set) ])
+
+                # Check If There Null Values - test
+                if testSet_featuresWithNulls[feature] != 0:
+                    # Categorical Attribute
+                    if "NUMERIC" not in self.structure_file[idx] :
+                        self.test_set[feature].fillna(stats.mode(connectedDataFrames[feature]), inplace=True)
+
+                    # Numeric Attribute
+                    elif "NUMERIC" in self.structure_file[idx] :
+                        self.test_set[feature] = self.test_set[feature].fillna(connectedDataFrames.groupby( "class" )[feature].transform("mean")[ len(self.train_set) : ])
+        except :
+            invalidFiles = True
+            message += "Error in the filling NA values.\n"
+
+        return invalidFiles, message
 
 
 

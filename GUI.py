@@ -2,7 +2,7 @@
 # HW4 : 312257116 _ 204415665 _ 206172686
 
 
-from tkinter import Tk, Label, Button, Entry, IntVar, END, W, E, filedialog, messagebox, DISABLED, NORMAL, GROOVE, RAISED
+from tkinter import Tk, Label, Button, Entry, filedialog, messagebox, DISABLED, NORMAL, GROOVE, RAISED
 
 import FilesHandler
 import PreProcessing
@@ -166,10 +166,14 @@ class GUI:
             return
 
         # Pre Process Train Files
-        pre_processing_result = self.pre_processor.preProcessBuildFiles(self.train_set, self.structure, self.number_of_bins)
+        invalidFiles, message, self.train_set, self.test_set = self.pre_processor.preProcessFiles(self.train_set, self.structure, self.test_set, self.number_of_bins)
+
+        if invalidFiles :
+            self.messageHandler("Build Error", message)
+            return
 
         # Build The Model
-        self.naive_bayes_model.buildModel(pre_processing_result)
+        self.naive_bayes_model.buildModel(self.train_set)
 
         # Finish Building The Model
         self.messageHandler("Build Finished", "Building classifier using train-set is done!")
@@ -180,14 +184,15 @@ class GUI:
         """
         After the user pressing the ' Classify ' button, this method called.
         This method is in charge of all the " Classification " stage -
-            sends the test file to preprocess
             send the data structure after preprocess to the prediction model
         """
-        # Pre Process Test File
-        pre_processing_result = self.pre_processor.preProcessTestSet(self.test_set)
 
         # Make Classification On Test File
-        self.naive_bayes_model.classifyTestSet(pre_processing_result, self.folder_directory_path)
+        invalidFile, message = self.naive_bayes_model.classifyTestSet(self.test_set, self.folder_directory_path)
+
+        if invalidFile :
+            self.messageHandler("Build Error", message)
+            return
 
         # Finish Classification - Exit The Program
         message = "All records are classified successfully ! \n\n"

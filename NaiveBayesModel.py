@@ -14,6 +14,8 @@ class NaiveBayesModel:
 
         #  TODO: Remove After Every this working
         self.prediction_calculation = {}
+        self.labels = None
+        #
 
         self.prior_probability = None
         self.likelihood = {}
@@ -80,7 +82,9 @@ class NaiveBayesModel:
         """
         self.folder_path = folderPath
 
-        labels = testSet.iloc[:, len(testSet.columns) - 1].values
+        #  TODO: Remove This
+        self.labels = testSet.iloc[:, len(testSet.columns) - 1].values
+        #
 
         self.test_set = testSet.drop(["class"], axis=1)
 
@@ -106,32 +110,55 @@ class NaiveBayesModel:
 
                 self.prediction_result[str(index + 1)][ class_value ] *= self.prior_probability[class_value]
 
-        self.writePredictionResultToFile()
+        invalidFile, message = self.writePredictionResultToFile()
 
+        return invalidFile, message
 
 
     def writePredictionResultToFile(self):
         """
         This method is in charge to right the prediction results to ' output.txt ' file
         """
-        with open(self.folder_path + "\\output.txt", 'w') as file:
+        invalidFile = False
+        message = ""
 
-            for record_number, prediction_options in self.prediction_result.items() :
+        #  TODO: Remove This
+        wrong = 0
+        #
 
-                max_val = 0
-                prediction_class = ''
-                for pred_option, option_value in prediction_options.items() :
-                    if option_value > max_val :
-                        max_val = option_value
-                        prediction_class = pred_option
+        try :
+            with open(self.folder_path + "\\output.txt", 'w') as file:
 
-                output_line = record_number + " " + prediction_class
+                for record_number, prediction_options in self.prediction_result.items() :
 
-                if len(self.prediction_result) != int(record_number) :
-                    output_line += "\n"
+                    max_val = 0
+                    prediction_class = ''
+                    for pred_option, option_value in prediction_options.items() :
+                        if option_value > max_val :
+                            max_val = option_value
+                            prediction_class = pred_option
 
-                file.write(output_line)
-        file.close()
+                    output_line = record_number + " " + prediction_class
 
-        #  TODO: Maybe try and except for file writing??
+                    #  TODO: Remove This
+                    if prediction_class != self.labels[int(record_number) - 1] :
+                        print(record_number + "Wrong")
+                        wrong += 1
+                    #
+
+
+                    if len(self.prediction_result) != int(record_number) :
+                        output_line += "\n"
+
+                    file.write(output_line)
+            #  TODO: Remove This
+            print( " Acc = " + str((len(self.labels) - wrong)/len(self.labels)) )
+            #
+
+            file.close()
+        except :
+            invalidFile = True
+            message += " Error in righting into the output file.\n"
+
+        return invalidFile, message
 
